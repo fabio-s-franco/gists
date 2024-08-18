@@ -108,19 +108,20 @@ For convenience the .wslconfig file used for these tests has been included in th
 
   ```shell
   $python ./flux_generator.py --help
-  usage: flux_generator.py [-h] [--model {schnell,dev}] [--device {cuda,cpu}] [--offload_off] [--steps STEPS] [--width WIDTH] [--height HEIGHT] [--output OUTPUT] [--cuda_pipeline] prompt
+  usage: flux_generator.py [-h] [--model {schnell,dev}] [--device {cuda,cpu}] [--offload_off] [--steps STEPS] [--width WIDTH] [--height HEIGHT] [--output OUTPUT] [--cuda_pipeline] "<PROMPT>"
 
   Flux Prompt to Image Generator
   
   positional arguments:
-    prompt                The prompt to generate the image
+    "<PROMPT>"            The prompt to generate the image
   
   options:
     -h, --help            show this help message and exit
     --model {schnell,dev}
                           Which Flux model to use
     --device {cuda,cpu}   Device to use for inference (default: cuda - better performance)
-    --offload_off         Disables model offload to CPU and uses the GPU as needed (default: offload is enabled). Lowers VRAM usage.
+    --offload_off         When enabled, model offloading utilizes spare CPU capacity, and only uses the GPU as the need arises, therefore conserves GPU VRAM usage. Passing this flag disables model offloading (default: offload is enabled). This flag improves performance, but only
+                          use this flag if you have enough GPU power and memory, otherwise you will get an OutOfMemory error.
     --steps STEPS         Number of inference steps. Higher, yields better image quality and is proportionally slower. Default 4 for schnell and 20 for dev
     --width WIDTH         Output image Width (default: 1024)
     --height HEIGHT       Output image Height (default: 1024)
