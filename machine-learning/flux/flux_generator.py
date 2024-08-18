@@ -6,57 +6,6 @@
 #             Information here may not be accurate or up-to-date. I am not responsible for any damage or loss caused by this script.
 # License: MIT
 # Description: Generates images using the FLUX models (schnell and dev) from Black Forest Labs on consumer grade hardware (NVIDIA GPU)
-# Assumptions: 
-#   - PyTorch >= 2.0 (dismisses xformers)
-#   - CUDA >= 11.0 (Ampere and later GPUs)
-#   - VRAM >= 8 GB (16 GB Shared Video RAM)
-#   - CPU >= 10 cores
-#   - RAM >= 32 GB
-# Dependencies (beyond project dependencies):
-#   - flux local installation (quick-start): https://github.com/black-forest-labs/flux?tab=readme-ov-file#local-installation
-#   - diffusers https://github.com/black-forest-labs/flux?tab=readme-ov-file#diffusers-integration
-#   - optimum-quanto https://huggingface.co/docs/diffusers/v0.30.0/en/api/pipelines/flux#single-file-loading-for-the-fluxtransformer2dmodel
-#   - accelerate # https://huggingface.co/docs/diffusers/en/tutorials/fast_diffusion
-# References: 
-#   - Flux Docs (Diffusers) - https://huggingface.co/docs/diffusers/en/index
-#   - CUDA (WSL) - https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#wsl
-# Environment (tested):
-#   - CPU(s): 20 (Intel(R) Core(TM) i9-12900H CPU @ 2.90GHz) - 10 cores available for WSL2
-#   - GPU(s): NVIDIA GeForce RTX 3080 Laptop GPU (8 GB VRAM) + Intel(R) UHD Graphics (16 GB Shared Video RAM)
-#   - RAM: 32 GB DODIMM 3200 MT/s (24 GB for WSL2 and 32 GB swap)
-#   - Hard-drive: High-speed NVMe SSD
-#   - Host: Windows 11 (10.0.22635.4010)
-#   - Virtualization Environment: WSL2 (2.3.17.0 Kernel: 5.15.153.1-2)
-#   - Distro: Kali GNU/Linux Rolling (2024.3) x86_64
-#   - Python 3.12.4
-# Benchmark with default parameters:
-#   - Model: dev (40 minutes for 20 steps)
-#   - Model: schnell (10 minutes for 4 steps)
-# Quick-start:
-#   1 - https://github.com/black-forest-labs/flux?tab=readme-ov-file#local-installation
-#   2 - Install extra packages
-#   ```shell
-#   cd $HOME/flux # or any other directory you chose in step 1
-#   pip install git+https://github.com/huggingface/diffusers.git
-#   pip install optimum-quanto
-#   pip install -U transformers accelerate peft
-#   ```
-#   3 - Run this script inside flux directory (python flux_generator.py --model dev "A dirty beggar wearing old rags, sitting on the sidewalk with its back touching a graffiti wall and a street dog laying by his right side. An RGB lit gaming laptop lays on his lap. To his left, laying against the wall, a sign that reads 'My laptop cannot run a transformer'. Next to the sign a shallow box with several tossed coins.")
-#
-# Tips for WSL2 users:
-#   Nvidia documentation is not very clear about the installation process for WSL. And there were hiccups
-#   It may be misleading in scenarios like mine (with Kali Linux) which is not officially supported by Nvidia
-#   The imporant thing is:
-#   - DON'T install the NVIDIA driver for Linux
-#   - IF debian based, use WSL-Ubuntu CUDA Toolkit installation: https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&Distribution=WSL-Ubuntu
-#   - IF not debian based, read the documnentation carefully, as the CUDA toolkit may overwrite the drivers installed by Windows for WSL2
-#   - The windows driver installation also installs the WSL2 driver, so don't worry about it
-#   - Run the command `nvidia-smi` to check if the driver is installed correctly (not nvidia-detect as in their docs)
-#   - GPU Memory usage will show as N/A in WSL2, because the controller is in Windows (can be viewed in Task Manager or Resource Monitor)
-# 
-# TODO: (for the unknown future)
-#   - https://huggingface.co/docs/diffusers/main/en/optimization/fp16#tiny-autoencoder
-#   - Attempt more up to date tokenizers (openai/clip-vit-base-patch32 and https://huggingface.co/google/siglip-so400m-patch14-384 lead to runtime errors)
 
 import torch
 from optimum.quanto import freeze, qfloat8, quantize
