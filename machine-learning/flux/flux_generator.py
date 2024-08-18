@@ -1,5 +1,5 @@
 # Author: Fábio Franco (https://github.com/fabio-s-franco)
-# Version: 1.0
+# Version: 1.1
 # Disclaimer: This script is should be used at your own risk. It is provided as is and may not be suitable for your use case.
 #             It is the result of a highly experimental project motivated by curiosity. It was done in less than a day and 
 #             I have little to no experience with python or marchine-learning techniques. Take the advices here with a pinch of salt.
@@ -65,7 +65,6 @@ from diffusers.models.transformers.transformer_flux import FluxTransformer2DMode
 from diffusers import FluxPipeline
 from transformers import CLIPTextModel, CLIPTokenizer,T5EncoderModel, T5TokenizerFast
 
-
 def generate(prompt: str, model_name: str, device: str = "cuda" if torch.cuda.is_available() else "cpu", offload: bool = True, steps: int = -1, width: int = 1024, height: int = 1024, output: str = None, cuda_pipeline: bool = False):
     model_id = f"black-forest-labs/FLUX.1-{model_name}"
     max_sequence_length = 256 if model_name == "schnell" else 512
@@ -75,10 +74,24 @@ def generate(prompt: str, model_name: str, device: str = "cuda" if torch.cuda.is
     dtype = torch.float16
     ###
 
+    tokenizerModel = "openai/clip-vit-large-patch14"
+
+    tokenizer = CLIPTokenizer.from_pretrained(tokenizerModel, clean_up_tokenization_spaces=True) # Currently, the default when clean_up_tokenization_spaces is not passed is False, but the behavior has been deprecated and will change.
+   
+    # How many tokens this model can handle
+    max_tokens = tokenizer.model_max_length
+
+    tokens = tokenizer(prompt, add_special_tokens=False)["input_ids"]
+    num_tokens = len(tokens)
+    
+    if num_tokens > max_tokens:
+        excess_tokens = tokens[max_tokens:]
+        excess_text = tokenizer.decode(excess_tokens, clean_up_tokenization_spaces=True)
+        raise ValueError(f"The maximum amount of tokens is {max_tokens}, your prompt contains {num_tokens}, which is exceeded with the text: '{excess_text}'")
+
     # https://huggingface.co/docs/diffusers/v0.30.0/en/api/pipelines/flux#single-file-loading-for-the-fluxtransformer2dmodel
     scheduler = FlowMatchEulerDiscreteScheduler.from_pretrained(model_id, subfolder="scheduler", use_safetensors=True)
-    text_encoder = CLIPTextModel.from_pretrained("openai/clip-vit-large-patch14")
-    tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-large-patch14", clean_up_tokenization_spaces=True)
+    text_encoder = CLIPTextModel.from_pretrained(tokenizerModel)
     text_encoder_2 = T5EncoderModel.from_pretrained(model_id, subfolder="text_encoder_2", torch_dtype=dtype, use_safetensors=True)
     tokenizer_2 = T5TokenizerFast.from_pretrained(model_id, subfolder="tokenizer_2", torch_dtype=dtype, use_safetensors=True)
     vae = AutoencoderKL.from_pretrained(model_id, subfolder="vae", torch_dtype=dtype, use_safetensors=True)
@@ -127,7 +140,12 @@ if __name__ == "__main__":
     parser.add_argument("prompt", type=str, help="The prompt to generate the image", metavar="\"<PROMPT>\"")
     parser.add_argument("--model", type=str, default="schnell", choices=["schnell", "dev"], help="Which Flux model to use", required=False)
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", choices=["cuda", "cpu"], help="Device to use for inference (default: cuda - better performance)", required=False)
-    parser.add_argument("--offload_off", action="store_true", help="Disables model offload to CPU and uses the GPU as needed (default: offload is enabled). Lowers VRAM usage.", required=False)
+    parser.add_argument("--offload_off", action="store_true", required=False,
+        help="""When enabled, model offloading utilizes spare CPU capacity, and only uses the GPU as the need arises, 
+        therefore conserves GPU VRAM usage. Passing this flag disables model offloading (default: offload is enabled). 
+        This flag improves performance, but only use this flag if you have enough GPU power and memory, otherwise you 
+        will get an OutOfMemory error."""
+    )
     parser.add_argument("--steps", type=int, default=0, help="Number of inference steps. Higher, yields better image quality and is proportionally slower. Default 4 for schnell and 20 for dev", required=False)
     parser.add_argument("--width", type=int, default=1024, help="Output image Width (default: 1024)", required=False)
     parser.add_argument("--height", type=int, default=1024, help="Output image Height (default: 1024)", required=False)
@@ -139,4 +157,8 @@ if __name__ == "__main__":
     offload = not args.offload_off
     steps = args.steps if args.steps > 0 else 4 if args.model == "schnell" else 20
 
-    generate(args.prompt, args.model, args.device, offload, steps, args.width, args.height, args.output, args.cuda_pipeline)
+    try:
+        generate(args.prompt, args.model, args.device, offload, steps, args.width, args.height, args.output, args.cuda_pipeline)
+    except ValueError as e:
+        print(e)
+        exit(1)
