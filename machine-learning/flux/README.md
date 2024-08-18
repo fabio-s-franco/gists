@@ -1,6 +1,6 @@
 # Flux Text-to-Image Generator (using your home computer)
 
-## Introduction
+## Introduction (Shiny samples down below)
 
 This script is a helper to generate images from text using the FLUX open source machine-learning models, developed by [Black Forest Labs](https://blackforestlabs.ai/).
 The goal is to be able to generate these images relying only on your local compute resources (no fee, no limits beyond your own hardware) and open source models.
